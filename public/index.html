@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hyperions — Main Website</title>
+  <meta name="description" content="Real-time operational status and elite helper application portal for Hyperions.">
+  <meta property="og:title" content="Hyperions — Main Website">
+  <meta property="og:description" content="Real-time operational status and elite helper application portal for Hyperions.">
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css?v=redesign_v2">
+  <style>
+    /* ── DESIGN TOKENS ───────────────────────────────────── */
+    :root {
+      --c0: #000000;
+      --c1: #0a0a0f;
+      --c2: #111118;
+      --c3: #1a1a26;
+      --accent: #7c6fff;
+      --accent2: #a78bfa;
+      --accent3: #c4b5fd;
+      --green: #34d399;
+      --gold: #fbbf24;
+      --red: #f87171;
+      --white: #ffffff;
+      --dim: rgba(255,255,255,0.45);
+      --dimmer: rgba(255,255,255,0.18);
+      --border: rgba(255,255,255,0.07);
+      --border-accent: rgba(124,111,255,0.3);
+      --glass: rgba(255,255,255,0.03);
+      --glass-heavy: rgba(255,255,255,0.06);
+      --font-sans: 'Inter', system-ui, sans-serif;
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --ease: cubic-bezier(0.16,1,0.3,1);
+    }
+
+    /* ── RESET ───────────────────────────────────────────── */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--accent) transparent; }
+    body { background: var(--c0); color: var(--white); font-family: var(--font-sans); overflow-x: hidden; line-height: 1.6; }
+    a { text-decoration: none; color: inherit; }
+    img { display: block; }
+
+    /* ── BACKGROUND CANVAS ───────────────────────────────── */
+    .bg-canvas {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden;
+    }
+    .bg-canvas::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(124,111,255,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(167,139,250,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 100% 50% at 50% 50%, rgba(0,0,0,1) 30%, transparent 80%);
+    }
+    .bg-grid {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 0%, transparent 100%);
+    }
+    .noise {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+    }
+
+    /* ── CURSOR ──────────────────────────────────────────── */
+    * { cursor: none !important; }
+    .cursor-dot {
+      position: fixed; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%); transition: transform 0.05s;
+    }
+    .cursor-ring {
+      position: fixed; width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid rgba(124,111,255,0.5); pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%); transition: transform 0.15s var(--ease), width 0.3s var(--ease), height 0.3s var(--ease), border-color 0.3s;
+    }
+    .cursor-ring.hover { width: 48px; height: 48px; border-color: var(--accent); }
+    .cursor-glow {
+      position: fixed; width: 300px; height: 300px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(124,111,255,0.08) 0%, transparent 70%);
+      pointer-events: none; z-index: -1; transform: translate(-50%,-50%);
+      transition: transform 0.4s var(--ease);
+    }
+
+    /* ── LOADER ──────────────────────────────────────────── */
+    .loader {
+      position: fixed; inset: 0; z-index: 9000;
+      background: var(--c0); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2rem;
+      transition: opacity 0.6s var(--ease), visibility 0.6s;
+    }
+    .loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .loader-logo { width: 72px; height: 72px; border-radius: 20px; animation: pulse-logo 2s ease-in-out infinite; }
+    @keyframes pulse-logo { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.7;transform:scale(0.97);} }
+    .loader-track { width: 200px; height: 2px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .loader-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; transition: width 0.2s; }
+    .loader-label { font-size: 0.8rem; letter-spacing: 0.15em; color: var(--dimmer); font-weight: 500; }
+
+    /* ── NAV ─────────────────────────────────────────────── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 1.25rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid transparent;
+      transition: background 0.4s, border-color 0.4s, backdrop-filter 0.4s;
+    }
+    .nav.scrolled {
+      background: rgba(0,0,0,0.8);
+      -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+      border-color: var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 0.75rem; font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+    .nav-logo img { width: 36px; height: 36px; border-radius: 10px; }
+    .nav-links { display: flex; gap: 0.25rem; }
+    .nav-link { padding: 0.5rem 1rem; border-radius: 10px; font-size: 0.875rem; font-weight: 500; color: var(--dim); transition: all 0.2s; }
+    .nav-link:hover { color: var(--white); background: var(--glass-heavy); }
+    .nav-cta {
+      padding: 0.6rem 1.4rem; border-radius: 12px; font-size: 0.875rem; font-weight: 600;
+      background: var(--accent); color: #fff;
+      box-shadow: 0 0 20px rgba(124,111,255,0.4);
+      transition: all 0.25s var(--ease);
+    }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 0 30px rgba(124,111,255,0.6); }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 8rem 2rem 6rem;
+      position: relative;
+    }
+    .hero-inner { max-width: 900px; margin: 0 auto; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      padding: 0.45rem 1.1rem; border-radius: 99px;
+      border: 1px solid var(--border-accent);
+      background: rgba(124,111,255,0.08);
+      font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; color: var(--accent3);
+      margin-bottom: 2rem;
+      animation: fadeUp 0.8s var(--ease) both;
+    }
+    .hero-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 2s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+    .hero-title {
+      font-family: var(--font-display); font-size: clamp(3.5rem, 8vw, 7rem); font-weight: 800;
+      line-height: 1.05; letter-spacing: -0.03em;
+      animation: fadeUp 0.8s 0.1s var(--ease) both;
+    }
+    .hero-title .line1 { display: block; }
+    .hero-title .grad {
+      display: block;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-sub {
+      margin-top: 1.75rem; font-size: 1.15rem; color: var(--dim); max-width: 600px; margin-inline: auto;
+      animation: fadeUp 0.8s 0.2s var(--ease) both;
+    }
+    .hero-actions {
+      margin-top: 2.5rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+      animation: fadeUp 0.8s 0.3s var(--ease) both;
+    }
+    .btn-primary {
+      padding: 0.85rem 2rem; border-radius: 14px; font-size: 0.95rem; font-weight: 700;
+      background: var(--accent); color: #fff;
+      box-shadow: 0 0 30px rgba(124,111,255,0.45), inset 0 1px 0 rgba(255,255,255,0.1);
+      transition: all 0.25s var(--ease);
+    }
+    .btn-primary:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 50px rgba(124,111,255,0.65); }
+    .btn-secondary {
+      padding: 0.85rem 2rem; border-radius: 14px; font-size: 0.95rem; font-weight: 600;
+      border: 1px solid var(--border); color: var(--dim); background: var(--glass);
+      transition: all 0.25s var(--ease);
+    }
+    .btn-secondary:hover { border-color: rgba(255,255,255,0.2); color: var(--white); background: var(--glass-heavy); }
+    .hero-scroll {
+      position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+      font-size: 0.72rem; letter-spacing: 0.1em; color: var(--dimmer); animation: fadeUp 1s 0.5s var(--ease) both;
+    }
+    .hero-scroll-line { width: 1px; height: 40px; background: linear-gradient(to bottom, var(--accent), transparent); animation: scrollLine 2s ease-in-out infinite; }
+    @keyframes scrollLine { 0%,100%{opacity:0.3;transform:scaleY(0.6);} 50%{opacity:1;transform:scaleY(1);} }
+
+    /* ── STATS STRIP ─────────────────────────────────────── */
+    .stats-strip {
+      padding: 0 2rem; max-width: 1200px; margin: 0 auto 6rem;
+    }
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+      background: var(--border); border-radius: 24px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .stat-cell {
+      background: var(--c1); padding: 2rem 1.5rem;
+      display: flex; align-items: center; gap: 1.25rem;
+      transition: background 0.25s;
+    }
+    .stat-cell:hover { background: var(--c2); }
+    .stat-icon {
+      width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
+      background: rgba(124,111,255,0.12); border: 1px solid var(--border-accent);
+      display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+    }
+    .stat-info {}
+    .stat-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dimmer); margin-bottom: 0.3rem; }
+    .stat-value { font-family: var(--font-display); font-size: 1.75rem; font-weight: 800; line-height: 1; }
+    .stat-unit { font-size: 1rem; color: var(--dim); }
+
+    /* ── SECTION SHARED ──────────────────────────────────── */
+    .section { padding: 7rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .section-label {
+      display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
+    }
+    .section-title { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+    .section-sub { margin-top: 0.75rem; font-size: 1rem; color: var(--dim); max-width: 520px; line-height: 1.7; }
+    .section-head { margin-bottom: 3.5rem; }
+
+    /* reveal animation */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+    .reveal.active { opacity: 1; transform: none; }
+
+    /* ── BOT STATUS SECTION ──────────────────────────────── */
+    #dashboard .status-layout {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+    }
+    .status-card {
+      background: var(--c1); border: 1px solid var(--border);
+      border-radius: 24px; padding: 2rem;
+      display: flex; flex-direction: column; gap: 1rem;
+      transition: border-color 0.25s, transform 0.25s var(--ease);
+    }
+    .status-card:hover { border-color: var(--border-accent); transform: translateY(-3px); }
+    .status-card.wide { grid-column: 1 / -1; }
+
+    /* uptime bar */
+    .uptime-section {}
+    .uptime-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+    .uptime-label { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
+    .uptime-pct { font-family: var(--font-mono); font-size: 0.85rem; color: var(--green); }
+    .uptime-bar { display: flex; gap: 3px; height: 36px; align-items: stretch; border-radius: 10px; overflow: hidden; }
+    .uptime-bar-seg { flex: 1; border-radius: 2px; background: var(--green); opacity: 0.9; transition: opacity 0.2s; }
+    .uptime-bar-seg:hover { opacity: 1; }
+    .uptime-bar-seg.down { background: var(--red); opacity: 0.5; }
+
+    /* service list */
+    .service-row { display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 0; border-bottom: 1px solid var(--border); }
+    .service-row:last-child { border-bottom: none; }
+    .service-name { font-size: 0.9rem; font-weight: 500; color: var(--dim); }
+    .service-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .service-status { font-size: 0.8rem; font-family: var(--font-mono); color: var(--green); display: flex; align-items: center; gap: 0.5rem; }
+
+    /* big metric inside card */
+    .card-metric-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .card-metric-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dimmer); margin-bottom: 0.35rem; }
+    .card-metric-value { font-family: var(--font-display); font-size: 2.75rem; font-weight: 800; line-height: 1; }
+    .card-metric-sub { font-size: 0.8rem; color: var(--dimmer); margin-top: 0.35rem; }
+
+    /* ── VERSION BADGE ───────────────────────────────────── */
+    .version-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.4rem 0.9rem; border-radius: 99px;
+      background: rgba(124,111,255,0.12); border: 1px solid var(--border-accent);
+      font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent3);
+    }
+
+    /* ── STAFF GRID ──────────────────────────────────────── */
+    #staff .staff-showcase { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1.25rem; }
+    .staff-card {
+      background: var(--c1); border: 1px solid var(--border); border-radius: 20px;
+      padding: 1.75rem 1.25rem; text-align: center;
+      transition: border-color 0.25s, transform 0.3s var(--ease), box-shadow 0.3s;
+    }
+    .staff-card:hover { border-color: var(--border-accent); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    .staff-avatar-wrap { position: relative; width: 72px; height: 72px; margin: 0 auto 1rem; }
+    .staff-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
+    .staff-avatar-ring { display: none; }
+    .staff-card:hover .staff-avatar-ring { display: none; }
+    .staff-online { position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--green); border: 2px solid var(--c1); }
+    .staff-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3rem; }
+    .staff-role { font-size: 0.75rem; color: var(--dim); margin-bottom: 0.75rem; }
+    .staff-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.35rem; }
+    .staff-tag { font-size: 0.65rem; padding: 0.2rem 0.55rem; border-radius: 99px; background: rgba(124,111,255,0.1); border: 1px solid var(--border-accent); color: var(--accent3); font-weight: 600; }
+
+    /* ── RULES SECTION ───────────────────────────────────── */
+    .rules-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+    .rule-card {
+      background: var(--c1); border: 1px solid var(--border); border-radius: 24px;
+      padding: 2rem; transition: border-color 0.25s;
+    }
+    .rule-card:hover { border-color: var(--border-accent); }
+    .rule-card-title {
+      font-family: var(--font-display); font-size: 1.1rem; font-weight: 700;
+      margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.6rem;
+      color: var(--white);
+    }
+    .rule-card-icon { font-size: 1.3rem; }
+    .rule-list { display: flex; flex-direction: column; gap: 1rem; }
+    .rule-item { display: flex; gap: 0.85rem; align-items: flex-start; }
+    .rule-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 0.55rem; }
+    .rule-text { font-size: 0.875rem; color: var(--dim); line-height: 1.6; }
+    .rule-text strong { color: var(--white); font-weight: 600; }
+
+    .quota-mini { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem; }
+    .quota-row { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.85rem; background: var(--glass); border-radius: 10px; border: 1px solid var(--border); }
+    .quota-game { font-size: 0.8rem; font-weight: 600; color: var(--accent2); }
+    .quota-req { font-size: 0.78rem; color: var(--dim); font-family: var(--font-mono); }
+
+    /* ── UPDATES TIMELINE ────────────────────────────────── */
+    .timeline { display: flex; flex-direction: column; gap: 0; position: relative; }
+    .timeline::before { content: ''; position: absolute; left: 16px; top: 0; bottom: 0; width: 1px; background: var(--border); }
+    .timeline-item { display: flex; gap: 1.5rem; padding: 1.5rem 0; position: relative; }
+    .timeline-dot { width: 33px; height: 33px; border-radius: 50%; background: var(--c2); border: 2px solid var(--border-accent); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: var(--accent3); z-index: 1; }
+    .timeline-dot.latest { background: rgba(124,111,255,0.2); border-color: var(--accent); box-shadow: 0 0 16px rgba(124,111,255,0.3); color: var(--accent); }
+    .timeline-content { padding-top: 0.3rem; flex: 1; }
+    .timeline-version { font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .timeline-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .timeline-body { font-size: 0.875rem; color: var(--dim); line-height: 1.7; }
+    .timeline-body li { margin-left: 1.2rem; margin-top: 0.35rem; }
+
+    /* ── STEPS (HOW IT WORKS) ────────────────────────────── */
+    .steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+    .step-card {
+      background: var(--c1); border: 1px solid var(--border); border-radius: 24px;
+      padding: 2rem; position: relative; overflow: hidden;
+      transition: border-color 0.25s, transform 0.3s var(--ease);
+    }
+    .step-card:hover { border-color: var(--border-accent); transform: translateY(-4px); }
+    .step-num {
+      font-family: var(--font-display); font-size: 5rem; font-weight: 900; line-height: 1;
+      position: absolute; right: 1.25rem; top: 0.5rem;
+      background: linear-gradient(135deg, var(--accent), transparent);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      opacity: 0.35; pointer-events: none;
+    }
+    .step-icon-wrap { width: 52px; height: 52px; border-radius: 16px; background: rgba(124,111,255,0.1); border: 1px solid var(--border-accent); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1.25rem; }
+    .step-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .step-body { font-size: 0.875rem; color: var(--dim); line-height: 1.6; }
+
+    /* ── CTA SECTION ─────────────────────────────────────── */
+    .cta-section {
+      padding: 6rem 2rem; text-align: center;
+      background: linear-gradient(to bottom, transparent, rgba(124,111,255,0.05), transparent);
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .cta-inner { max-width: 700px; margin: 0 auto; }
+    .cta-title { font-family: var(--font-display); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 1.25rem; }
+    .cta-sub { font-size: 1.05rem; color: var(--dim); margin-bottom: 2.5rem; line-height: 1.7; }
+    .cta-grad { background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer {
+      padding: 4rem 2rem 2rem; max-width: 1200px; margin: 0 auto;
+    }
+    .footer-top { display: flex; justify-content: space-between; gap: 3rem; padding-bottom: 3rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .footer-brand h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 0.75rem; }
+    .footer-brand p { font-size: 0.875rem; color: var(--dim); max-width: 300px; line-height: 1.7; }
+    .footer-col h4 { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dimmer); margin-bottom: 1rem; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; }
+    .footer-col a { font-size: 0.875rem; color: var(--dim); transition: color 0.2s; }
+    .footer-col a:hover { color: var(--white); }
+    .footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .footer-copy { font-size: 0.8rem; color: var(--dimmer); }
+    .footer-refresh { font-size: 0.78rem; font-family: var(--font-mono); color: var(--dimmer); }
+
+    /* ── ANIMATIONS ──────────────────────────────────────── */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:none;} }
+
+    /* ── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      #dashboard .status-layout { grid-template-columns: 1fr; }
+      .rules-grid { grid-template-columns: 1fr; }
+      .steps-row { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .footer-top { flex-direction: column; }
+    }
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      #staff .staff-showcase { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-canvas"></div>
+  <div class="bg-grid"></div>
+  <div class="noise"></div>
+
+  <div class="cursor-dot" id="cursorDot"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+  <div class="cursor-glow" id="cursorGlow"></div>
+
+  <div id="cursorFollower" style="display:none"></div>
+  <div id="dotCursor" style="display:none"></div>
+  <div id="dotCursorOuter" style="display:none"></div>
+
+  <div class="loader" id="loadingScreen">
+    <img src="logo.png" alt="Hyperions" class="loader-logo">
+    <div class="loader-track">
+      <div class="loader-fill" id="loaderBar"></div>
+    </div>
+    <div class="loader-label" style="font-family:'JetBrains Mono',monospace; font-size:.7rem; letter-spacing:.1em; color:rgba(255,255,255,0.3);">HYPERIONS LOADING</div>
+  </div>
+
+  <header class="nav" id="mainNav">
+    <a href="/" class="nav-logo">
+      <img src="logo.png" alt="Hyperions Logo">
+      <span>Hyperions</span>
+    </a>
+    <nav class="nav-links" role="navigation">
+      <a href="#dashboard" class="nav-link">Dashboard</a>
+      <a href="#staff" class="nav-link">Staff</a>
+      <a href="/helpers" class="nav-link">Helpers</a>        <a href="/messages" class="nav-link">Analytics</a>
+      <a href="#rules" class="nav-link">Rules</a>
+      <a href="#updates" class="nav-link">Updates</a>
+    </nav>
+    <a href="/helper-application" class="nav-cta">Become a Helper</a>
+  </header>
+
+  <main>
+
+    <section class="hero" id="home">
+      <div class="hero-inner">
+        <div class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          <span>Hyperions Server only for you</span>
+        </div>
+        <h1 class="hero-title">
+          <span class="line1">Hyperions</span>
+          <span class="grad">Bot Status</span>
+        </h1>
+        <p class="hero-sub">
+          You can check here if the bot is online or offline, how many tickets are open, how many vouches the bot has, and how many messages have been sent in the server, Apply to become a helper, and check the rules of the server.
+        </p>
+        <div class="hero-actions">
+          <a href="#dashboard" class="btn-primary" id="heroBtnStatus">View Dashboard</a>
+          <a href="/helpers" class="btn-secondary">Meet the Helpers</a>
+        </div>
+      </div>
+      <div class="hero-scroll" aria-hidden="true">
+        <div class="hero-scroll-line"></div>
+        SCROLL
+      </div>
+    </section>
+
+    <div class="stats-strip" id="dashboard">
+      <div class="stats-grid reveal">
+
+        <div class="stat-cell">
+          <div class="stat-icon" id="metricIconUptime">📡</div>
+          <div class="stat-info">
+            <div class="stat-label">Uptime</div>
+            <div class="stat-value" id="uptimeVal">--</div>
+          </div>
+        </div>
+
+        <div class="stat-cell">
+          <div class="stat-icon" id="metricIconPing">⚡</div>
+          <div class="stat-info">
+            <div class="stat-label">Latency</div>
+            <div class="stat-value"><span id="pingVal">0</span><span class="stat-unit">ms</span></div>
+          </div>
+        </div>
+
+        <div class="stat-cell">
+          <div class="stat-icon" id="metricIconTickets">🎟️</div>
+          <div class="stat-info">
+            <div class="stat-label">Open Tickets</div>
+            <div class="stat-value" id="ticketsVal">0</div>
+          </div>
+        </div>
+
+        <div class="stat-cell">
+          <div class="stat-icon" id="metricIconVouches">⭐</div>
+          <div class="stat-info">
+            <div class="stat-label">Total Vouches</div>
+            <div class="stat-value" id="vouchesVal">0</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <section class="section" style="padding-top:2rem;">
+      <div class="section-head reveal">
+        <span class="section-label">Monitoring</span>
+        <h2 class="section-title">Status of the Hyperions Bot</h2>
+        <p class="section-sub">Live operational data refreshed every 30 seconds from our infrastructure nodes.</p>
+      </div>
+
+      <div class="status-layout reveal" id="statusLayout">
+
+        <div class="status-card wide">
+          <div class="uptime-header">
+            <span class="uptime-label">90-Day Uptime History</span>
+            <span class="uptime-pct" id="uptimePct">100.00%</span>
+          </div>
+          <div class="uptime-bar" id="uptimeBar"></div>
+        </div>
+
+        <div class="status-card">
+          <div class="card-metric-icon" id="headerIconBot">🛠️</div>
+          <div class="card-metric-label">Bot Core</div>
+          <div class="card-metric-value version-badge" id="botVersion" style="font-size:1.1rem;">v3.4.0</div>
+          <div class="card-metric-sub">Discord.js v14 · Node.js 20</div>
+        </div>
+
+        <div class="status-card">
+          <div class="card-metric-icon" id="headerIconInfo">🌐</div>
+          <div class="card-metric-label">Nodes Connected</div>
+          <div class="card-metric-value" id="guildsVal">1</div>
+          <div class="card-metric-sub">Active guild servers</div>
+        </div>
+
+        <div class="status-card wide" id="serviceList">
+          <div class="service-row">
+            <span class="service-name">Discord Core</span>
+            <span class="service-status"><span class="service-dot"></span> Operational</span>
+          </div>
+          <div class="service-row">
+            <span class="service-name">Relational DB (Supabase)</span>
+            <span class="service-status"><span class="service-dot"></span> Operational</span>
+          </div>
+          <div class="service-row">
+            <span class="service-name">Northflank Cluster</span>
+            <span class="service-status"><span class="service-dot"></span> Operational</span>
+          </div>
+          <div class="service-row">
+            <span class="service-name">Vercel Proxy</span>
+            <span class="service-status"><span class="service-dot"></span> Operational</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="section" id="staff">
+      <div class="section-head reveal">
+        <span class="section-label">Team</span>
+        <h2 class="section-title">Hyperions Staff Team</h2>
+        <p class="section-sub">The dedicated team behind the Hyperions Server.</p>
+      </div>
+      <div class="staff-showcase reveal" id="staffGrid">
+        <div style="color:var(--dim);font-size:.875rem;padding:1rem 0;">Accessing personnel database...</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-label">How It Works</span>
+        <h2 class="section-title">Getting Carried in 3 Steps</h2>
+      </div>
+      <div class="steps-row">
+        <div class="step-card reveal">
+          <div class="step-num">1</div>
+          <div class="step-icon-wrap"><span id="stepIcon01">🎟️</span></div>
+          <div class="step-title">Open a Ticket</div>
+          <div class="step-body">Head to our Discord server, pick your game from the carry panel and submit your carry request. Your ticket channel opens instantly.</div>
+        </div>
+        <div class="step-card reveal" style="transition-delay:.1s;">
+          <div class="step-num">2</div>
+          <div class="step-icon-wrap"><span id="stepIcon02">🤝</span></div>
+          <div class="step-title">Get Matched</div>
+          <div class="step-body">A qualified Helper for your game claims your ticket and joins your session. 15-minute response window guaranteed.</div>
+        </div>
+        <div class="step-card reveal" style="transition-delay:.2s;">
+          <div class="step-num">3</div>
+          <div class="step-icon-wrap"><span id="stepIcon03">⭐</span></div>
+          <div class="step-title">Vouch & Complete</div>
+          <div class="step-body">After your carry is complete, leave a vouch to rate your Helper and help track their performance on the leaderboard.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="rules">
+      <div class="section-head reveal">
+        <span class="section-label">Regulations</span>
+        <h2 class="section-title">Helper Rules &amp; Guidelines</h2>
+        <p class="section-sub">All Helpers are expected to follow these rules to maintain quality service.</p>
+      </div>
+
+      <div class="rules-grid">
+        <div class="rule-card reveal">
+          <div class="rule-card-title"><span id="headerIconRules" class="rule-card-icon">📜</span> Standard Rules</div>
+          <div class="rule-list">
+            <div class="rule-item">
+              <div class="rule-dot"></div>
+              <p class="rule-text"><strong>Priority:</strong> Handle tickets in chronological order. 15-minute response window before skip.</p>
+            </div>
+            <div class="rule-item">
+              <div class="rule-dot"></div>
+              <p class="rule-text"><strong>Integrity:</strong> Only claim missions you intend to complete. Avoid cross-trading or payment requests.</p>
+            </div>
+            <div class="rule-item">
+              <div class="rule-dot"></div>
+              <p class="rule-text"><strong>Handover:</strong> If unable to continue, unclaim immediately and notify the Helper channel.</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1.5rem;">
+          <div class="rule-card reveal" style="transition-delay:.1s;">
+            <div class="rule-card-title"><span id="headerIconPayment" class="rule-card-icon">💳</span> Payment</div>
+            <p class="rule-text">Follow carry-information strictly. Voluntary tips are allowed — asking for payment is a demotion-worthy offence.</p>
+          </div>
+
+          <div class="rule-card reveal" style="transition-delay:.2s;">
+            <div class="rule-card-title"><span id="headerIconQuota" class="rule-card-icon">🎯</span> Quota Requirements</div>
+            <div class="quota-mini">
+              <div class="quota-row">
+                <span class="quota-game">ALS / AV</span>
+                <span class="quota-req">10 vouches / week</span>
+              </div>
+              <div class="quota-row">
+                <span class="quota-game">Paradox</span>
+                <span class="quota-req">Activity monitored</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="updates">
+      <div class="section-head reveal">
+        <span class="section-label">Logbook</span>
+        <h2 class="section-title">Hyperions Bot Updates</h2>
+      </div>
+
+      <div class="timeline reveal">
+        <div class="timeline-item">
+          <div class="timeline-dot latest">★</div>
+          <div class="timeline-content">
+            <div class="timeline-version">v3.4.0 — Latest</div>
+            <div class="timeline-title">The "Hyperions Experience" Update</div>
+            <div class="timeline-body">
+              <ul>
+                <li><strong>Homepage Redesign:</strong> Fully redesigned for a clean, premium look.</li>
+                <li><strong>Live Ticket Sync:</strong> Fixed ticket counter synchronisation with Supabase.</li>
+                <li><strong>Helper Avatars:</strong> Switched to Roblox public API — works everywhere.</li>
+                <li><strong>Ticket Reminder v2:</strong> English-language v2 component reminder messages.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot">3</div>
+          <div class="timeline-content">
+            <div class="timeline-version">v3.3.0</div>
+            <div class="timeline-title">Live Modmail & Status Page</div>
+            <div class="timeline-body">
+              <ul>
+                <li><strong>Premium Loading Screen:</strong> Added a high-end, animated entrance experience.</li>
+                <li><strong>Live Modmail Support:</strong> Fully integrated into the status page widget.</li>
+                <li><strong>Discord Media Sync:</strong> Images sent in Discord correctly render in the website chat.</li>
+                <li><strong>System Stability:</strong> Optimised the bot startup sequence.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot">2</div>
+          <div class="timeline-content">
+            <div class="timeline-version">v3.2.0</div>
+            <div class="timeline-title">Helper Application Redesign</div>
+            <div class="timeline-body">The <strong>Helper Application</strong> website has been fully redesigned with a professional experience.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="cta-section">
+      <div class="cta-inner reveal">
+        <h2 class="cta-title">Join our<br><span class="cta-grad">Elite Helper Team</span></h2>
+        <p class="cta-sub">Do you have what it takes? Apply to become an official Hyperions Helper and start helping our community level up.</p>
+        <a href="/helper-application" class="btn-primary" style="font-size:1rem;padding:1rem 2.5rem;">Apply Now →</a>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <h2>HYPERIONS</h2>
+        <p>Dedicated to providing the best possible experience for our users across the carry network.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Ecosystem</h4>
+        <ul>
+          <li><a href="/helper-application">Become a Helper</a></li>
+          <li><a href="#dashboard">Live Dashboard</a></li>
+          <li><a href="/helpers">Helper Board</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="/terms.html">Terms of Engagement</a></li>
+          <li><a href="/privacy.html">Privacy Protocol</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">© 2026 Hyperions Network. All signals operational.</span>
+      <span class="footer-refresh">Refreshed <span id="lastRefresh">--:--</span></span>
+    </div>
+  </footer>
+
+  <script>
+    // ── Cursor ───────────────────────────────────────────────
+    const dot  = document.getElementById('cursorDot');
+    const ring = document.getElementById('cursorRing');
+    const glow = document.getElementById('cursorGlow');
+    let mx = 0, my = 0;
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      dot.style.transform  = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
+      ring.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
+      glow.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
+    });
+    document.querySelectorAll('a,button,.stat-cell,.staff-card,.step-card,.rule-card,.status-card').forEach(el => {
+      el.addEventListener('mouseenter', () => ring.classList.add('hover'));
+      el.addEventListener('mouseleave', () => ring.classList.remove('hover'));
+    });
+
+    // ── Nav scroll ───────────────────────────────────────────
+    const nav = document.getElementById('mainNav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // ── Loader ───────────────────────────────────────────────
+    const loader = document.getElementById('loadingScreen');
+    const bar    = document.getElementById('loaderBar');
+    let prog = 0;
+    const iv = setInterval(() => {
+      prog += Math.random() * 22;
+      if (prog >= 100) {
+        prog = 100; clearInterval(iv);
+        setTimeout(() => loader.classList.add('hidden'), 400);
+      }
+      bar.style.width = prog + '%';
+    }, 120);
+
+    // ── Reveal on scroll ─────────────────────────────────────
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('active'); obs.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    function attachReveal() { document.querySelectorAll('.reveal:not(.active)').forEach(el => obs.observe(el)); }
+    attachReveal();
+  </script>
+
+  <script>
+    // ── Uptime bar (90 days visual) ──────────────────────────
+    (function() {
+      const bar = document.getElementById('uptimeBar');
+      if (!bar) return;
+      for (let i = 0; i < 90; i++) {
+        const seg = document.createElement('div');
+        seg.className = 'uptime-bar-seg';
+        seg.title = `Day ${90 - i}`;
+        bar.appendChild(seg);
+      }
+    })();
+
+    // ── Last refresh ─────────────────────────────────────────
+    function updateRefreshTime() {
+      const el = document.getElementById('lastRefresh');
+      if (el) {
+        const now = new Date();
+        el.textContent = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      }
+    }
+    updateRefreshTime();
+    setInterval(updateRefreshTime, 30000);
+  </script>
+
+  <script src="status.js?v=redesign_v2"></script>
+  <script src="modmail-widget.js?v=redesign_v2"></script>
+
+</body>
+</html>
