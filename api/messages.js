@@ -5,6 +5,65 @@ const HALF_HOUR_MS = 30 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
+const userCache = new Map();
+
+function getDefaultAvatar(userId, discriminator = '0') {
+  const index = discriminator && discriminator !== '0'
+    ? Number(discriminator) % 5
+    : Number(BigInt(userId || '0') >> 22n) % 6;
+  return `https://cdn.discordapp.com/embed/avatars/${index}.png`;
+}
+
+function resolveAvatarUrl(userId, payload, guildId) {
+  if (!payload) return getDefaultAvatar(userId);
+  if (payload.guild_avatar) {
+    const ext = payload.guild_avatar.startsWith('a_') ? 'gif' : 'png';
+    return `https://cdn.discordapp.com/guilds/${guildId}/users/${userId}/avatars/${payload.guild_avatar}.${ext}?size=128`;
+  }
+  if (payload.avatar) {
+    const ext = payload.avatar.startsWith('a_') ? 'gif' : 'png';
+    return `https://cdn.discordapp.com/avatars/${userId}/${payload.avatar}.${ext}?size=128`;
+  }
+  return getDefaultAvatar(userId, payload.discriminator);
+}
+
+async function fetchUser(userId, guildId, discordToken) {
+  if (!discordToken || !userId) return null;
+  if (userCache.has(userId)) return userCache.get(userId);
+
+  const headers = { Authorization: `Bot ${discordToken}` };
+  let payload = null;
+
+  try {
+    const memberRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, { headers });
+    if (memberRes.ok) {
+      const member = await memberRes.json();
+      if (member?.user) {
+        payload = {
+          ...member.user,
+          guild_avatar: member.avatar,
+          nick: member.nick || null
+        };
+      }
+    }
+  } catch (error) {
+    console.error(`[api/messages] Discord member fetch error for ${userId}:`, error.message);
+  }
+
+  if (!payload) {
+    try {
+      const userRes = await fetch(`https://discord.com/api/v10/users/${userId}`, { headers });
+      if (userRes.ok) payload = await userRes.json();
+      else if (userRes.status === 429) console.warn(`[api/messages] Discord rate limited for ${userId}`);
+    } catch (error) {
+      console.error(`[api/messages] Discord user fetch error for ${userId}:`, error.message);
+    }
+  }
+
+  if (payload) userCache.set(userId, payload);
+  return payload;
+}
+
 async function fetchAllRows(supabase, table, columns, buildQuery) {
   const rows = [];
   let from = 0;
@@ -259,63 +318,6 @@ module.exports = async (req, res) => {
     const activeChannelsPerBucket = channelsInBucketSet.map((set) => set.size);
 
     const discordToken = process.env.DISCORD_TOKEN;
-    const userCache = new Map();
-    const getDefaultAvatar = (userId, discriminator = '0') => {
-      const index = discriminator && discriminator !== '0'
-        ? Number(discriminator) % 5
-        : Number(BigInt(userId || '0') >> 22n) % 6;
-      return `https://cdn.discordapp.com/embed/avatars/${index}.png`;
-    };
-
-    const fetchUser = async (userId) => {
-      if (!discordToken || !userId) return null;
-      if (userCache.has(userId)) return userCache.get(userId);
-
-      const headers = { Authorization: `Bot ${discordToken}` };
-      let payload = null;
-
-      try {
-        const memberRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, { headers });
-        if (memberRes.ok) {
-          const member = await memberRes.json();
-          if (member?.user) {
-            payload = {
-              ...member.user,
-              guild_avatar: member.avatar,
-              nick: member.nick || null
-            };
-          }
-        }
-      } catch (error) {
-        console.error(`[api/messages] Discord member fetch error for ${userId}:`, error.message);
-      }
-
-      if (!payload) {
-        try {
-          const userRes = await fetch(`https://discord.com/api/v10/users/${userId}`, { headers });
-          if (userRes.ok) payload = await userRes.json();
-          else if (userRes.status === 429) console.warn(`[api/messages] Discord rate limited for ${userId}`);
-        } catch (error) {
-          console.error(`[api/messages] Discord user fetch error for ${userId}:`, error.message);
-        }
-      }
-
-      userCache.set(userId, payload);
-      return payload;
-    };
-
-    const resolveAvatarUrl = (userId, payload) => {
-      if (!payload) return getDefaultAvatar(userId);
-      if (payload.guild_avatar) {
-        const ext = payload.guild_avatar.startsWith('a_') ? 'gif' : 'png';
-        return `https://cdn.discordapp.com/guilds/${guildId}/users/${userId}/avatars/${payload.guild_avatar}.${ext}?size=128`;
-      }
-      if (payload.avatar) {
-        const ext = payload.avatar.startsWith('a_') ? 'gif' : 'png';
-        return `https://cdn.discordapp.com/avatars/${userId}/${payload.avatar}.${ext}?size=128`;
-      }
-      return getDefaultAvatar(userId, payload.discriminator);
-    };
 
     const userMap = new Map();
     for (const row of msgRows) {
@@ -327,13 +329,13 @@ module.exports = async (req, res) => {
     }
 
     let topUsers = [...userMap.values()].sort((a, b) => b.count - a.count).slice(0, 10);
-    const topUserDetails = await Promise.all(topUsers.map((user) => fetchUser(user.userId)));
+    const topUserDetails = await Promise.all(topUsers.map((user) => fetchUser(user.userId, guildId, discordToken)));
     topUsers = topUsers.map((user, index) => {
       const payload = topUserDetails[index];
       return {
         ...user,
         username: payload?.global_name || payload?.nick || payload?.username || user.username,
-        avatar: resolveAvatarUrl(user.userId, payload)
+        avatar: resolveAvatarUrl(user.userId, payload, guildId)
       };
     });
 
@@ -357,13 +359,13 @@ module.exports = async (req, res) => {
     }
 
     let topVcUsers = [...vcUserMap.values()].sort((a, b) => b.minutes - a.minutes).slice(0, 10);
-    const topVcDetails = await Promise.all(topVcUsers.map((user) => fetchUser(user.userId)));
+    const topVcDetails = await Promise.all(topVcUsers.map((user) => fetchUser(user.userId, guildId, discordToken)));
     topVcUsers = topVcUsers.map((user, index) => {
       const payload = topVcDetails[index];
       return {
         ...user,
         username: payload?.global_name || payload?.nick || payload?.username || user.username,
-        avatar: resolveAvatarUrl(user.userId, payload)
+        avatar: resolveAvatarUrl(user.userId, payload, guildId)
       };
     });
 
