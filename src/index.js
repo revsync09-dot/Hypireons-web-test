@@ -1890,7 +1890,7 @@ async function executeTicketCreation(interaction, gameKey, ign, request, joinMet
 
     ticketCounter += 1;
     const ticketNum = ticketCounter;
-    const channelName = `${gameKey.toLowerCase()}-carry-${ticketNum}`;
+    const channelName = `carry-${ticketNum}`;
 
     const overwrites = [
       {
