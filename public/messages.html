@@ -117,29 +117,33 @@
     .range-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: var(--white); border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
     .range-labels { display: flex; gap: .55rem; font-family: var(--mono); font-size: .6rem; color: var(--dim); font-weight: 700; text-transform: uppercase; flex-wrap: wrap; }
     .range-chip {
+      -webkit-appearance: none;
+      -moz-appearance: none;
       appearance: none;
       border: 1px solid transparent;
       background: transparent;
       color: inherit;
       cursor: pointer;
-      padding: .35rem .55rem;
+      padding: .35rem .65rem;
       border-radius: 999px;
-      transition: color .2s, background .2s, border-color .2s, transform .2s;
+      transition: all .28s var(--ease);
       font: inherit;
       text-transform: inherit;
-      letter-spacing: .08em;
+      letter-spacing: .12em;
+      font-weight: 700;
+      font-size: 0.68rem;
     }
     .range-chip:hover {
       color: var(--white);
-      background: rgba(255,255,255,.05);
-      border-color: rgba(255,255,255,.08);
-      transform: translateY(-1px);
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.12);
+      transform: translateY(-1.5px);
     }
     .range-chip.active {
       color: var(--white);
-      background: rgba(255,255,255,.07);
-      border-color: rgba(255,255,255,.12);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+      background: rgba(255,255,255,.1);
+      border-color: rgba(163,230,53,.3);
+      box-shadow: 0 4px 12px rgba(163,230,53,.08);
     }
 
     .chart-toggle { display: flex; gap: .4rem; background: var(--c3); padding: .3rem; border-radius: 12px; }
@@ -172,19 +176,18 @@
     .summary-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); gap:1.2rem; margin-bottom:3rem; align-items:stretch; }
     .summary-cell {
       position: relative;
-      min-height: 318px;
-      border-radius: 30px;
-      border: 1px solid rgba(255,255,255,.08);
+      min-height: 320px;
+      border-radius: 32px;
+      border: 1px solid rgba(255,255,255,.06);
       overflow: hidden;
-      background:
-        linear-gradient(180deg, rgba(10,10,16,.96) 0%, rgba(10,10,16,.9) 16%, rgba(12,18,14,.88) 100%);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
-      transition: transform .28s var(--ease), border-color .28s var(--ease), box-shadow .28s var(--ease);
+      background: linear-gradient(180deg, rgba(10,10,16,.98) 0%, rgba(10,10,16,.94) 25%, rgba(12,18,14,.92) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.02), 0 10px 30px rgba(0,0,0,0.2);
+      transition: all .35s var(--ease);
     }
     .summary-cell:hover {
-      transform: translateY(-4px);
-      border-color: rgba(163,230,53,.2);
-      box-shadow: 0 18px 48px rgba(0,0,0,.25);
+      transform: translateY(-6px) scale(1.01);
+      border-color: rgba(163,230,53,.45);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.35), 0 0 25px rgba(163,230,53,0.08);
     }
     .summary-cell-content {
       position: relative;
@@ -213,13 +216,13 @@
       letter-spacing: .22em;
     }
     .summary-cell-value {
-      font-family:var(--display);
-      font-size: clamp(2.3rem, 4vw, 3.3rem);
-      font-weight:800;
-      line-height:.96;
-      letter-spacing:-.05em;
+      font-family: var(--display);
+      font-size: clamp(2.4rem, 4.5vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -.06em;
       color: var(--white);
-      padding-left: 0;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     .summary-cell-meta {
       display:flex;
@@ -282,11 +285,13 @@
       position: absolute;
       inset: 0;
       background-image:
-        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
-      background-size: 100% 28%, 18% 100%;
-      opacity: .28;
+        linear-gradient(rgba(255,255,255,.04) 1.2px, transparent 1.2px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1.2px, transparent 1.2px);
+      background-size: 100% 32px, 32px 100%;
+      opacity: .3;
       pointer-events: none;
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.15) 0%, black 30%, black 100%);
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.15) 0%, black 30%, black 100%);
     }
     .sparkline-wrap canvas {
       width:100% !important;
@@ -294,17 +299,22 @@
       display:block;
     }
     .floating-avatar {
-      position:absolute;
-      top: 1rem;
-      right: 1rem;
-      width: 30px;
-      height: 30px;
+      position: absolute;
+      top: 1.2rem;
+      right: 1.2rem;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      border: 2px solid rgba(163,230,53,.2);
+      border: 2px solid rgba(163,230,53,.4);
       object-fit: cover;
-      opacity: .88;
+      opacity: .95;
       z-index: 4;
-      box-shadow: 0 0 0 4px rgba(0,0,0,.18);
+      box-shadow: 0 0 15px rgba(163,230,53,.2);
+      animation: avatarPulse 2.5s infinite var(--ease);
+    }
+    @keyframes avatarPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(163,230,53,.2); }
+      50% { transform: scale(1.08); box-shadow: 0 0 25px rgba(163,230,53,.45); }
     }
 
     /* LEADERBOARDS */
@@ -981,16 +991,6 @@
       }).format(date);
     }
 
-    function createHatchPattern(color) {
-      const pCanvas = document.createElement('canvas');
-      const pCtx = pCanvas.getContext('2d');
-      pCanvas.width = 12; pCanvas.height = 12;
-      pCtx.strokeStyle = color;
-      pCtx.lineWidth = 1;
-      pCtx.beginPath(); pCtx.moveTo(0, 12); pCtx.lineTo(12, 0); pCtx.stroke();
-      return pCtx.createPattern(pCanvas, 'repeat');
-    }
-
     function createLineAreaGradient(ctx, chart, stops) {
       const { chartArea } = chart;
       if (!chartArea) return null;
@@ -999,22 +999,27 @@
       return gradient;
     }
 
-    const activityPattern = createHatchPattern('rgba(163, 230, 53, 0.15)');
-    const growthPattern1 = createHatchPattern('rgba(163, 230, 53, 0.15)');
-    const growthPattern2 = createHatchPattern('rgba(255, 255, 255, 0.05)');
+    // v3.4.1 - Ultra Clean Version
     const chartMotionPlugin = {
       id: 'chartMotionPlugin',
-      beforeDatasetsDraw(chart) {
-        const { ctx, chartArea } = chart;
-        if (!chartArea) return;
-        ctx.save();
-        const glow = ctx.createLinearGradient(chartArea.left, chartArea.top, chartArea.right, chartArea.bottom);
-        glow.addColorStop(0, 'rgba(124,111,255,0.06)');
-        glow.addColorStop(0.5, 'rgba(163,230,53,0.08)');
-        glow.addColorStop(1, 'rgba(255,255,255,0.02)');
-        ctx.fillStyle = glow;
-        ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
-        ctx.restore();
+      afterDraw(chart) {
+        if (chart.tooltip?._active?.length) {
+          const { ctx } = chart;
+          const activePoint = chart.tooltip._active[0];
+          const x = activePoint.element.x;
+          const topY = chart.scales.y.top;
+          const bottomY = chart.scales.y.bottom;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(x, topY);
+          ctx.lineTo(x, bottomY);
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+          ctx.setLineDash([5, 5]);
+          ctx.stroke();
+          ctx.restore();
+        }
       }
     };
     Chart.register(chartMotionPlugin);
@@ -1046,15 +1051,22 @@
 
     const sparkCharts = {};
     function smoothSparkline(points) {
-      if (!Array.isArray(points) || points.length < 4) return points || [];
-      return points.map((value, index) => {
-        const prev = Number(points[index - 1] ?? value) || 0;
-        const current = Number(value) || 0;
-        const next = Number(points[index + 1] ?? value) || 0;
-        const farPrev = Number(points[index - 2] ?? prev) || 0;
-        const farNext = Number(points[index + 2] ?? next) || 0;
-        return ((farPrev * 0.1) + (prev * 0.2) + (current * 0.4) + (next * 0.2) + (farNext * 0.1));
-      });
+      return points || [];
+    }
+
+    function hexToRgba(hex, alpha = 1) {
+      let r = 0, g = 0, b = 0;
+      if (hex.startsWith('rgba')) return hex;
+      if (hex.length === 4) {
+        r = parseInt(hex[1] + hex[1], 16);
+        g = parseInt(hex[2] + hex[2], 16);
+        b = parseInt(hex[3] + hex[3], 16);
+      } else if (hex.length === 7) {
+        r = parseInt(hex.substring(1, 3), 16);
+        g = parseInt(hex.substring(3, 5), 16);
+        b = parseInt(hex.substring(5, 7), 16);
+      }
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
     function renderSparkline(id, data, color) {
@@ -1065,38 +1077,47 @@
 
       const rawPoints = Array.isArray(data) && data.length ? data : [0, 0, 0, 0];
       const points = smoothSparkline(rawPoints);
-      const solidColor = color.includes('1)') ? color : color.replace('0.35)', '1)').replace('0.25)', '1)');
-      const fillColor = solidColor.replace('1)', '0.04)');
-      const deepFill = solidColor.replace('1)', '0)');
-      const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+      
+      const themeColor = hexToRgba(color, 1);
+      const glowColor = hexToRgba(color, 0.4);
+      const fillColor = hexToRgba(color, 0.08);
+      const deepFill = hexToRgba(color, 0);
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 260);
       gradient.addColorStop(0, fillColor);
-      gradient.addColorStop(0.42, solidColor.replace('1)', '0.02)'));
+      gradient.addColorStop(0.6, hexToRgba(color, 0.02));
       gradient.addColorStop(1, deepFill);
 
       sparkCharts[id] = new Chart(ctx, {
         type: 'line',
         data: {
           labels: new Array(points.length).fill(''),
-          datasets: [{
-            data: points,
-            borderColor: solidColor,
-            borderWidth: 2.6,
-            pointRadius: 0,
-            pointHoverRadius: 0,
-            pointHitRadius: 12,
-            fill: true,
-            backgroundColor: gradient,
-            tension: 0.46,
-            cubicInterpolationMode: 'monotone'
-          }]
+          datasets: [
+            {
+              data: points,
+              borderColor: themeColor,
+              borderWidth: 2,
+              pointRadius: (ctx) => (ctx.dataIndex === points.length - 1 ? 4 : 0),
+              pointBackgroundColor: themeColor,
+              pointBorderColor: '#fff',
+              pointBorderWidth: 1.5,
+              fill: true,
+              backgroundColor: gradient,
+              tension: 0.42,
+              cubicInterpolationMode: 'monotone'
+            }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          plugins: { 
+            legend: { display: false }, 
+            tooltip: { enabled: false } 
+          },
           scales: {
             x: { display: false },
-            y: { display: false, beginAtZero: true, grace: '28%' }
+            y: { display: false, beginAtZero: true, grace: '32%' }
           },
           elements: {
             line: {
@@ -1106,9 +1127,12 @@
             }
           },
           layout: {
-            padding: { top: 22, right: 6, bottom: 10, left: 6 }
+            padding: { top: 22, right: 10, bottom: 8, left: 10 }
           },
-          animation: { duration: 1400, easing: 'easeOutQuart' }
+          animation: { 
+            duration: 1600, 
+            easing: 'easeOutQuart' 
+          }
         }
       });
       el.closest('.summary-cell').classList.add('ready');
@@ -1164,27 +1188,31 @@
         type: 'line',
         data: {
           labels,
-          datasets: [{
-            label: metricLabel,
-            data: metricData,
-            borderColor,
-            borderWidth: 3.5,
-            backgroundColor: (context) => createLineAreaGradient(context.chart.ctx, context.chart, [
-              [0, activeActivityMetric === 'messages' ? 'rgba(163, 230, 53, 0.26)' : 'rgba(139, 233, 253, 0.24)'],
-              [0.55, activeActivityMetric === 'messages' ? 'rgba(163, 230, 53, 0.09)' : 'rgba(139, 233, 253, 0.08)'],
-              [1, 'rgba(0,0,0,0)']
-            ]) || activityPattern,
-            fill: true,
-            tension: 0.48,
-            cubicInterpolationMode: 'monotone',
-            pointRadius: 0,
-            pointHoverRadius: 7,
-            pointHitRadius: 24,
-            pointHoverBackgroundColor: pointColor,
-            pointHoverBorderColor: '#fff',
-            pointHoverBorderWidth: 2,
-            pointBorderWidth: 0
-          }]
+          datasets: [
+            {
+              label: metricLabel,
+              data: metricData,
+              borderColor,
+              borderWidth: 2.5,
+              backgroundColor: (context) => createLineAreaGradient(context.chart.ctx, context.chart, [
+                [0, hexToRgba(borderColor, 0.08)],
+                [0.7, hexToRgba(borderColor, 0.01)],
+                [1, 'rgba(0,0,0,0)']
+              ]),
+              fill: true,
+              tension: 0.4,
+              cubicInterpolationMode: 'monotone',
+              pointRadius: (ctx) => (ctx.dataIndex === metricData.length - 1 ? 5 : 0),
+              pointBackgroundColor: borderColor,
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointHoverRadius: 8,
+              pointHitRadius: 30,
+              pointHoverBackgroundColor: borderColor,
+              pointHoverBorderColor: '#fff',
+              pointHoverBorderWidth: 2,
+            }
+          ]
         },
         options: {
           responsive: true,
@@ -1245,14 +1273,14 @@
               }
             },
             y: { 
-              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, 
+              grid: { color: 'rgba(255,255,255,0.02)', drawBorder: false }, 
               ticks: { 
-                color: 'rgba(255,255,255,0.3)', 
+                color: 'rgba(255,255,255,0.25)', 
                 font: { size: 10, family: 'JetBrains Mono' },
                 callback: v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v
               },
               beginAtZero: true,
-              grace: '12%'
+              grace: '15%'
             }
           }
         }
@@ -1278,22 +1306,24 @@
               label: isJoins ? 'Joins' : 'Leaves',
               data: metricData,
               borderColor: lineColor,
-              borderWidth: 3.5,
+              borderWidth: 2,
               backgroundColor: (context) => createLineAreaGradient(context.chart.ctx, context.chart, [
-                [0, isJoins ? 'rgba(163, 230, 53, 0.24)' : 'rgba(248, 250, 252, 0.20)'],
-                [0.55, isJoins ? 'rgba(163, 230, 53, 0.08)' : 'rgba(248, 250, 252, 0.06)'],
+                [0, hexToRgba(lineColor, 0.08)],
+                [0.7, hexToRgba(lineColor, 0.01)],
                 [1, 'rgba(0,0,0,0)']
-              ]) || (isJoins ? growthPattern1 : growthPattern2),
+              ]),
               fill: true,
-              tension: 0.48,
+              tension: 0.4,
               cubicInterpolationMode: 'monotone',
-              pointRadius: 0,
-              pointHoverRadius: 7,
-              pointHitRadius: 24,
+              pointRadius: (ctx) => (ctx.dataIndex === metricData.length - 1 ? 5 : 0),
+              pointBackgroundColor: lineColor,
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointHoverRadius: 8,
+              pointHitRadius: 30,
               pointHoverBackgroundColor: lineColor,
               pointHoverBorderColor: '#fff',
               pointHoverBorderWidth: 2,
-              pointBorderWidth: 0
             }
           ]
         },
@@ -1351,14 +1381,14 @@
               }
             },
             y: { 
-              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, 
+              grid: { color: 'rgba(255,255,255,0.02)', drawBorder: false }, 
               ticks: { 
-                color: 'rgba(255,255,255,0.3)', 
+                color: 'rgba(255,255,255,0.25)', 
                 font: { size: 10, family: 'JetBrains Mono' },
                 callback: v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v
               },
               beginAtZero: true,
-              grace: '12%'
+              grace: '15%'
             }
           }
         }
