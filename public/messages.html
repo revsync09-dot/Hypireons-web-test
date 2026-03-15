@@ -27,10 +27,9 @@
     }
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     html { scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--accent) transparent; }
-    body { background: var(--c0); color: var(--white); font-family: var(--sans); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
-    a { text-decoration: none; color: inherit; }
-    * { cursor: none !important; }
-    button, input, select { font: inherit; }
+    * { cursor: auto !important; }
+    body { background: var(--c0); color: var(--white); font-family: var(--sans); overflow-x: hidden; -webkit-font-smoothing: antialiased; font-size: 100%; line-height: 1.5; }
+    button, input, select { font: inherit; cursor: pointer !important; }
 
     /* BG */
     .bg { position:fixed; inset:0; z-index:-1; pointer-events:none;
@@ -389,14 +388,16 @@
       50% { transform: scale(1.2); opacity: 0.7; }
       100% { transform: scale(1); opacity: 1; }
     }
-    .board-avatar { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--border); object-fit: cover; background: var(--glass); }
-    .board-avatar-wrap { position: relative; width: 32px; height: 32px; flex: 0 0 32px; }
+    .board-avatar { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--border); object-fit: cover; background: var(--glass); opacity: 0; transition: opacity .4s ease; image-rendering: -webkit-optimize-contrast; }
+    .board-avatar.is-ready { opacity: 1; }
+    .board-avatar-wrap { position: relative; width: 32px; height: 32px; flex: 0 0 32px; background: rgba(255,255,255,.04); border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .board-avatar-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 800; color: var(--dim); z-index: 1; background: var(--glass); }
     .board-avatar-ring {
       position: absolute;
       inset: -3px;
       border-radius: 50%;
-      border: 1px solid rgba(124,111,255,.26);
-      opacity: .8;
+      border: 1px solid rgba(163,230,53,.2);
+      opacity: .6;
       animation: avatarPulse 2.6s ease-in-out infinite;
       pointer-events: none;
     }
@@ -433,6 +434,10 @@
       flex-wrap: wrap;
     }
     .board-title-main { display:flex; align-items:center; gap:.8rem; min-width:0; flex:1; }
+    .board-title-main span { position: relative; }
+    .live-indicator { display: inline-flex; align-items: center; gap: .4rem; font-family: var(--mono); font-size: .6rem; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 2px; }
+    .live-dot { width: 5px; height: 5px; background: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981; animation: blink 1.5s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .4; transform: scale(.8); } }
     .board-subtitle { font-family: var(--mono); font-size: .66rem; text-transform: uppercase; letter-spacing: .14em; color: var(--dim); text-align:right; flex:0 0 auto; }
     .board-list { gap: 1rem; position: relative; z-index: 1; }
     .board-row {
@@ -1177,8 +1182,8 @@
       const isHourly = d.range === '24h';
       const metricData = activeActivityMetric === 'messages' ? d.chart.messages : d.chart.vcMinutes;
       const metricLabel = activeActivityMetric === 'messages' ? 'Messages' : 'VC Minutes';
-      const borderColor = activeActivityMetric === 'messages' ? LIME : '#8be9fd';
-      const pointColor = activeActivityMetric === 'messages' ? LIME : '#8be9fd';
+      const borderColor = activeActivityMetric === 'messages' ? LIME : LIME;
+      const pointColor = activeActivityMetric === 'messages' ? LIME : LIME;
       updateChartStats('activity', metricData, activeActivityMetric === 'vc' ? 'minutes' : 'count');
 
       activityChart = new Chart(acCtx, {
@@ -1475,44 +1480,42 @@
 
     function renderLeaderboard(id, data, nameFn, valFn, displayFn, hideRank = false) {
       const el = document.getElementById(id);
-      if (!data?.length) { el.innerHTML = '<div style="color:var(--dimmer);font-style:italic;">No active data found.</div>'; return; }
+      if (!data?.length) { el.innerHTML = '<div style="color:var(--dimmer);padding:2rem;text-align:center;font-style:italic;">No signal.</div>'; return; }
       
       const max = Math.max(...data.map(valFn)) || 1;
-      const isChannel = id.toLowerCase().includes('channel');
-      const unitLabel = id === 'topVcList' ? 'hours tracked' : isChannel ? 'messages routed' : 'messages sent';
-      const metaLabel = id === 'topVcList' ? 'live voice signal' : isChannel ? 'channel activity' : 'member activity';
+      const isChannel = id.includes('Channel');
+      const unitLabel = id === 'topVcList' ? 'hours' : (isChannel ? 'msgs' : 'sent');
+      const metaLabel = id === 'topVcList' ? 'voice' : (isChannel ? 'channel' : 'member');
       
-      const getInitials = (item) => {
-        if (isChannel) return '#';
-        const name = String(nameFn(item));
-        return name.replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || '?';
-      };
-
-      el.innerHTML = data.slice(0, 8).map((item, i) => `
-        <div class="board-row ${!hideRank && i === 0 ? 'is-lead' : ''}">
-          ${hideRank ? '' : `<div class="board-rank-chip">${i === 0 ? 'lead' : `top ${i + 1}`}</div>`}
+      el.innerHTML = data.slice(0, 8).map((item, i) => {
+        const initials = isChannel ? '#' : (String(nameFn(item)).charAt(0).toUpperCase() || '?');
+        const displayVal = displayFn ? displayFn(item) : valFn(item).toLocaleString();
+        const rankClass = i === 0 ? 'podium-1' : '';
+        
+        return `
+        <div class="board-row ${rankClass}">
           <div class="board-avatar-wrap">
-            <div class="board-avatar-fallback">${getInitials(item)}</div>
-            ${item.avatar ? `<img src="${item.avatar}" class="board-avatar" referrerpolicy="no-referrer" loading="lazy" decoding="async" onload="this.parentElement.querySelector('.board-avatar-fallback').style.opacity='0'; this.style.opacity='1';">` : ``}
+            <div class="board-avatar-fallback">${initials}</div>
+            ${item.avatar ? `<img src="${item.avatar}" class="board-avatar" referrerpolicy="no-referrer" onload="this.classList.add('is-ready'); this.previousElementSibling.style.opacity='0';">` : ''}
             <div class="board-avatar-ring"></div>
           </div>
           <div class="board-info">
             <div class="board-head">
               <div class="board-name-wrap">
                 <div class="board-name">${nameFn(item)}</div>
-                <div class="board-meta-line"><span class="board-dot"></span>${metaLabel}</div>
+                <div class="board-meta-line"><span class="board-dot"></span>${metaLabel} activity</div>
               </div>
               <div class="board-value">
-                <div class="board-count">${(displayFn ? displayFn(item) : valFn(item)).toLocaleString()}</div>
+                <div class="board-count">${displayVal}</div>
                 <div class="board-unit">${unitLabel}</div>
               </div>
             </div>
             <div class="board-bar-wrap">
-              <div class="board-bar" style="width: 0%; transform-origin: left; height: 100%; border-radius: 100px; background: ${LIME}; transition: width 1s var(--ease);" data-w="${(valFn(item)/max)*100}%"></div>
+              <div class="board-bar" style="width: 0%; height: 100%; border-radius: 100px; background: ${LIME}; box-shadow: 0 0 10px ${LIME_DIM}; transition: width 1.2s var(--ease);" data-w="${(valFn(item)/max)*100}%"></div>
             </div>
           </div>
         </div>
-      `).join('');
+      `}).join('');
       
       setTimeout(() => {
         el.querySelectorAll('.board-bar').forEach(bar => bar.style.width = bar.dataset.w);
@@ -1564,7 +1567,7 @@
       }
 
       renderSparkline('sparkMsgs', d.chart.messages, LIME);
-      renderSparkline('sparkVc', d.chart.vcMinutes, '#10b981'); // Clean Emerald
+      renderSparkline('sparkVc', d.chart.vcMinutes, LIME);
       renderSparkline('sparkUsers', d.chart.activeUsers, LIME);
       updateSummaryStats('statMsgs', d.chart.messages, 'count');
       updateSummaryStats('statVc', d.chart.vcMinutes, 'minutes');
@@ -1573,8 +1576,9 @@
       renderLeaderboard('topUsersList', d.topUsers, u => u.username, u => u.count);
       renderLeaderboard('topChannelsList', d.topChannels, c => '#' + c.name, c => c.count, null, true);
       renderLeaderboard('topVcList', d.topVcUsers, u => u.username, u => u.minutes, u => {
-        if (u.minutes >= 60) return (u.minutes / 60).toFixed(1);
-        return u.minutes;
+        const h = Math.floor(u.minutes / 60);
+        const m = Math.round(u.minutes % 60);
+        return m > 0 ? `${h}h ${m}m` : `${h}h`;
       });
 
       const badgeLabel = document.getElementById('badgeLabel');
@@ -1635,7 +1639,9 @@
     async function load(range, target = 'all', options = {}) {
       const withLoader = Boolean(options.withLoader);
       const btn = document.getElementById('refreshBtn');
+      const refreshText = document.getElementById('refreshingText');
       btn.style.opacity = '0.5'; btn.style.pointerEvents = 'none';
+      if (refreshText) refreshText.style.display = 'block';
       if (withLoader) startLoader();
       
       try {
@@ -1658,6 +1664,7 @@
         console.error(e);
       } finally { 
         btn.style.opacity = '1'; btn.style.pointerEvents = 'all';
+        if (refreshText) refreshText.style.display = 'none';
         if (withLoader) finishLoader(); 
       }
     }
@@ -1695,6 +1702,13 @@
     }
     setInterval(updateLiveTimer, 1000);
     updateLiveTimer();
+
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+      console.log('[Analytics] Auto-refreshing metrics...');
+      const idx = Number(sliderA.value);
+      load(ranges[idx], 'all', { withLoader: false });
+    }, 30000);
   </script>
 </body>
 </html>
