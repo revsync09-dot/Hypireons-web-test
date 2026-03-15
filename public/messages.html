@@ -113,7 +113,7 @@
 
     /* RANGE SLIDER */
     .range-slider-wrap { display: flex; align-items: center; gap: 1rem; background: var(--c1); padding: .5rem 1.2rem; border-radius: 100px; border: 1px solid var(--border); }
-    .range-slider { -webkit-appearance: none; width: 120px; height: 4px; background: var(--border); border-radius: 2px; outline: none; }
+    .range-slider { -webkit-appearance: none; appearance: none; width: 120px; height: 4px; background: var(--border); border-radius: 2px; outline: none; }
     .range-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: var(--white); border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
     .range-labels { display: flex; gap: .55rem; font-family: var(--mono); font-size: .6rem; color: var(--dim); font-weight: 700; text-transform: uppercase; flex-wrap: wrap; }
     .range-chip {
@@ -1096,11 +1096,8 @@
             {
               data: points,
               borderColor: themeColor,
-              borderWidth: 2,
-              pointRadius: (ctx) => (ctx.dataIndex === points.length - 1 ? 4 : 0),
-              pointBackgroundColor: themeColor,
-              pointBorderColor: '#fff',
-              pointBorderWidth: 1.5,
+              borderWidth: 1.5,
+              pointRadius: 0,
               fill: true,
               backgroundColor: gradient,
               tension: 0.42,
@@ -1476,20 +1473,27 @@
       load(ranges[index], 'growth');
     });
 
-    function renderLeaderboard(id, data, nameFn, valFn, hideRank = false) {
+    function renderLeaderboard(id, data, nameFn, valFn, displayFn, hideRank = false) {
       const el = document.getElementById(id);
-      if (!data?.length) { el.innerHTML = '<div style="color:var(--dimmer);font-style:italic;">No signal found in this sector.</div>'; return; }
+      if (!data?.length) { el.innerHTML = '<div style="color:var(--dimmer);font-style:italic;">No active data found.</div>'; return; }
       
       const max = Math.max(...data.map(valFn)) || 1;
-      const unitLabel = id === 'topVcList' ? 'hours tracked' : id === 'topChannelsList' ? 'messages routed' : 'messages sent';
-      const metaLabel = id === 'topVcList' ? 'live voice signal' : id === 'topChannelsList' ? 'channel activity' : 'member activity';
-      const initialsFor = (item) => String(nameFn(item)).replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || 'H';
+      const isChannel = id.toLowerCase().includes('channel');
+      const unitLabel = id === 'topVcList' ? 'hours tracked' : isChannel ? 'messages routed' : 'messages sent';
+      const metaLabel = id === 'topVcList' ? 'live voice signal' : isChannel ? 'channel activity' : 'member activity';
+      
+      const getInitials = (item) => {
+        if (isChannel) return '#';
+        const name = String(nameFn(item));
+        return name.replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || '?';
+      };
+
       el.innerHTML = data.slice(0, 8).map((item, i) => `
         <div class="board-row ${!hideRank && i === 0 ? 'is-lead' : ''}">
           ${hideRank ? '' : `<div class="board-rank-chip">${i === 0 ? 'lead' : `top ${i + 1}`}</div>`}
           <div class="board-avatar-wrap">
-            <div class="board-avatar-fallback">${initialsFor(item)}</div>
-            ${item.avatar ? `<img src="${item.avatar}" class="board-avatar" referrerpolicy="no-referrer" loading="lazy" decoding="async" onload="this.classList.add('is-loaded');const fb=this.parentElement.querySelector('.board-avatar-fallback');if(fb)fb.style.opacity='0';" onerror="this.remove();">` : ``}
+            <div class="board-avatar-fallback">${getInitials(item)}</div>
+            ${item.avatar ? `<img src="${item.avatar}" class="board-avatar" referrerpolicy="no-referrer" loading="lazy" decoding="async" onload="this.parentElement.querySelector('.board-avatar-fallback').style.opacity='0'; this.style.opacity='1';">` : ``}
             <div class="board-avatar-ring"></div>
           </div>
           <div class="board-info">
@@ -1499,12 +1503,12 @@
                 <div class="board-meta-line"><span class="board-dot"></span>${metaLabel}</div>
               </div>
               <div class="board-value">
-                <div class="board-count">${valFn(item).toLocaleString()}</div>
+                <div class="board-count">${(displayFn ? displayFn(item) : valFn(item)).toLocaleString()}</div>
                 <div class="board-unit">${unitLabel}</div>
               </div>
             </div>
             <div class="board-bar-wrap">
-              <div class="board-bar" style="width: 0%; transform-origin: left; height: 100%; border-radius: 100px; background: ${LIME}; box-shadow: 0 0 10px ${LIME_DIM}; transition: width 1s var(--ease);" data-w="${(valFn(item)/max)*100}%"></div>
+              <div class="board-bar" style="width: 0%; transform-origin: left; height: 100%; border-radius: 100px; background: ${LIME}; transition: width 1s var(--ease);" data-w="${(valFn(item)/max)*100}%"></div>
             </div>
           </div>
         </div>
@@ -1527,21 +1531,18 @@
       const existingAvatar = userCell.querySelector('.floating-avatar');
       if (existingAvatar && existingAvatar.dataset.src === url) return;
 
-      const probe = new Image();
-      probe.onload = () => {
+      const avatarEl = document.createElement('img');
+      avatarEl.src = url;
+      avatarEl.className = 'floating-avatar';
+      avatarEl.dataset.src = url;
+      avatarEl.referrerPolicy = 'no-referrer';
+      avatarEl.onload = () => {
         if (existingAvatar) existingAvatar.remove();
-        const avatarEl = document.createElement('img');
-        avatarEl.src = url;
-        avatarEl.className = 'floating-avatar';
-        avatarEl.dataset.src = url;
-        avatarEl.referrerPolicy = 'no-referrer';
         userCell.appendChild(avatarEl);
       };
-      probe.onerror = () => {
-        if (!existingAvatar) return;
-        existingAvatar.style.opacity = '0.88';
+      avatarEl.onerror = () => {
+        avatarEl.remove();
       };
-      probe.src = url;
     }
 
     function applySummaryAndBoards(d) {
@@ -1563,15 +1564,15 @@
       }
 
       renderSparkline('sparkMsgs', d.chart.messages, LIME);
-      renderSparkline('sparkVc', d.chart.vcMinutes, 'rgba(34, 197, 94, 1)');
+      renderSparkline('sparkVc', d.chart.vcMinutes, '#10b981'); // Clean Emerald
       renderSparkline('sparkUsers', d.chart.activeUsers, LIME);
       updateSummaryStats('statMsgs', d.chart.messages, 'count');
       updateSummaryStats('statVc', d.chart.vcMinutes, 'minutes');
       updateSummaryStats('statUsers', d.chart.activeUsers, 'count');
 
       renderLeaderboard('topUsersList', d.topUsers, u => u.username, u => u.count);
-      renderLeaderboard('topChannelsList', d.topChannels, c => '#' + c.name, c => c.count, true);
-      renderLeaderboard('topVcList', d.topVcUsers, u => u.username, u => {
+      renderLeaderboard('topChannelsList', d.topChannels, c => '#' + c.name, c => c.count, null, true);
+      renderLeaderboard('topVcList', d.topVcUsers, u => u.username, u => u.minutes, u => {
         if (u.minutes >= 60) return (u.minutes / 60).toFixed(1);
         return u.minutes;
       });
